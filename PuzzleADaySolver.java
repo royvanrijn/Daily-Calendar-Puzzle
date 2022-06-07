@@ -1,8 +1,6 @@
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -70,11 +68,11 @@ public class PuzzleADaySolver {
             return Arrays.toString(board);
         }
 
-        // Try this piece in all positions are rotations:
+        // Try this piece and its rotations on all positions: (yeah dumb/exhaustive)
         for(int[][] rotation : pieceRotations[pieceToPlace]) {
             for(int position = 0; position < board.length; position++) {
-                // Try to fit it in:
 
+                // Try the fit:
                 int ox = position % 7;
                 int oy = position / 7;
 
@@ -86,26 +84,24 @@ public class PuzzleADaySolver {
                     continue;
                 }
 
-                boolean fits = true;
-                outer: for(int y = 0; y < rotation.length; y++) {
-                    for(int x = 0; x < rotation[0].length; x++) {
+                boolean stillFits = true;
+                for(int y = 0; stillFits && y < rotation.length; y++) {
+                    for(int x = 0; stillFits && x < rotation[0].length; x++) {
                         if(rotation[y][x] == 1) {
                             if(position + y*7 + x >= board.length) {
-                                fits = false;
-                                break outer;
+                                stillFits = false;
                             }
                             if(board[position + y*7 + x] == EMPTY) {
                                 board[position + y*7 + x] = pieceToPlace;
                             } else {
-                                fits = false;
-                                break outer;
+                                stillFits = false;
                             }
                         }
                     }
                 }
 
-                // If this piece fits and we don't create a small disjoined group (which will be invalid anyway
-                if(fits && (pieceToPlace >= 8 || detectSmallestGroupSize(board) > 4)) {
+                // If this piece stillFits and we don't create a small disjoined group (which will be invalid anyway)
+                if(stillFits && (pieceToPlace >= 8 || getSmallestGroup(board) > 4)) {
                     String solution = fillBoard(board, pieceRotations, pieceToPlace+1);
                     if(solution != null) {
                         return solution;
@@ -146,76 +142,41 @@ public class PuzzleADaySolver {
         return uniqueRotations;
     }
 
-
     /**
      * A LOT of invalid solutions can be removed if we don't allow small islands with <4 blocks
      * This makes the runtime managable, probably easier and better ways to do this, IDGAF
      */
-    private int detectSmallestGroupSize(final int[] board) {
+    boolean[] filledIn = new boolean[7*8];
+    private int getSmallestGroup(final int[] board) {
+        // Fill every spot and count group-size:
+        Arrays.fill(filledIn, false);
 
-        // Stupid way to avoid flood fill to find the group sizes, there are probably easier ways to do this.
-
-        // Sweep the board three times and collect/merge groups.
-
-        int[] groupsize = new int[board.length];
-        int groupcnt = 1;
-        for(int i = 0; i < groupsize.length; i++) {
-            if(board[i] == EMPTY) {
-                groupsize[i] = groupcnt++;
+        int smallestGroup = Integer.MAX_VALUE;
+        for(int i = 0; i < board.length; i++) {
+            if(!filledIn[i] && board[i] == EMPTY) {
+                smallestGroup = Math.min(smallestGroup, floodfill(filledIn, board, i));
             }
         }
-        // Minimize the groups:
-        for(int i = 0; i < groupsize.length; i++) {
-            if (groupsize[i] != 0) {
-                int smallest = groupsize[i];
-                // look north
-                if (i > 6 && groupsize[i - 7] != 0) {
-                    smallest = Math.min(smallest, groupsize[i-7]);
-                }
-                // look west
-                if (i % 7 > 0 && groupsize[i - 1] != 0) {
-                    smallest = Math.min(smallest, groupsize[i-1]);
-                }
-                groupsize[i] = smallest;
-            }
-        }
-        for(int i = groupsize.length - 1; i >= 0; i--) {
-            if (groupsize[i] != 0) {
-                int smallest = groupsize[i];
-                // look south
-                if (i < groupsize.length - 7 && groupsize[i + 7] != 0) {
-                    smallest = Math.min(smallest, groupsize[i + 7]);
-                }
-                // look east
-                if (i % 7 < 6 && groupsize[i + 1] != 0) {
-                    smallest = Math.min(smallest, groupsize[i + 1]);
-                }
-                groupsize[i] = smallest;
-            }
-        }
-        for(int i = 0; i < groupsize.length; i++) {
-            if (groupsize[i] != 0) {
-                int smallest = groupsize[i];
-                // look north
-                if (i > 6 && groupsize[i - 7] != 0) {
-                    smallest = Math.min(smallest, groupsize[i-7]);
-                }
-                // look west
-                if (i % 7 > 0 && groupsize[i - 1] != 0) {
-                    smallest = Math.min(smallest, groupsize[i-1]);
-                }
-                groupsize[i] = smallest;
-            }
-        }
+        return smallestGroup;
+    }
 
-        // This should be enough to join together all the groups.
-        Map<Integer, Long> groups = Arrays.stream(groupsize).filter(i -> i>0).boxed().collect(
-                Collectors.groupingBy(
-                        Function.identity(),
-                        Collectors.counting()));
-
-        // Returns the size of the smallest disconnected group
-        return groups.values().stream().mapToInt(i->i.intValue()).min().getAsInt();
+    private int floodfill(boolean[] filledIn, int[] board, int p) {
+        int addedToGroup = 1;
+        filledIn[p] = true;
+        // Check all the neighbors:
+        if(p-7 > 0 && !filledIn[p-7] && board[p-7] == EMPTY) {
+            addedToGroup += floodfill(filledIn, board, p-7);
+        }
+        if(p+7 < board.length && !filledIn[p+7] && board[p+7] == EMPTY) {
+            addedToGroup += floodfill(filledIn, board, p+7);
+        }
+        if(p%7 > 0 && !filledIn[p-1] && board[p-1] == EMPTY) {
+            addedToGroup += floodfill(filledIn, board, p-1);
+        }
+        if(p%7 < 6 && !filledIn[p+1] && board[p+1] == EMPTY) {
+            addedToGroup += floodfill(filledIn, board, p+1);
+        }
+        return addedToGroup;
     }
 
     private boolean isEqual(int[][] p1, int[][] p2) {
@@ -234,14 +195,6 @@ public class PuzzleADaySolver {
         return true;
     }
 
-    private void printPiece(final int[][] rotation) {
-        for(int x = 0; x < rotation.length; x++) {
-            for(int y = 0; y < rotation[0].length; y++) {
-                System.out.print(rotation[x][y]);
-            }
-            System.out.println();
-        }
-    }
     private int[][] createFlip(final int[][] piece) {
         int[][] rotation = new int[piece.length][piece[0].length];
         for(int x = 0; x < piece.length; x++) {
