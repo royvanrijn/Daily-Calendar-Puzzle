@@ -84,15 +84,14 @@ public class PuzzleADaySolver {
                     continue;
                 }
 
+                List<Integer> boardPositionsOfPiece = new ArrayList<>();
                 boolean stillFits = true;
                 for(int y = 0; stillFits && y < rotation.length; y++) {
                     for(int x = 0; stillFits && x < rotation[0].length; x++) {
                         if(rotation[y][x] == 1) {
-                            if(position + y*7 + x >= board.length) {
-                                stillFits = false;
-                            }
-                            if(board[position + y*7 + x] == EMPTY) {
-                                board[position + y*7 + x] = pieceToPlace;
+                            int pos = position + y*7 + x;
+                            if(board[pos] == EMPTY) {
+                                boardPositionsOfPiece.add(pos);
                             } else {
                                 stillFits = false;
                             }
@@ -101,14 +100,18 @@ public class PuzzleADaySolver {
                 }
 
                 // If this piece stillFits and we don't create a small disjoined group (which will be invalid anyway)
-                if(stillFits && (pieceToPlace >= 8 || getSmallestGroup(board) > 4)) {
-                    String solution = fillBoard(board, pieceRotations, pieceToPlace+1);
-                    if(solution != null) {
-                        return solution;
+                if(stillFits) {
+                    // Make the moves:
+                    for(int i : boardPositionsOfPiece) board[i] = pieceToPlace;
+                    if (pieceToPlace >= 8 || getSmallestGroup(board) > 4) {
+                        String solution = fillBoard(board, pieceRotations, pieceToPlace + 1);
+                        if (solution != null) {
+                            return solution;
+                        }
                     }
+                    // Undo the moves:
+                    for(int i : boardPositionsOfPiece) board[i] = EMPTY;
                 }
-                // Clear and continue
-                for(int i = 0; i < board.length; i++) if(board[i] == pieceToPlace) board[i] = EMPTY;
             }
         }
         return null;
