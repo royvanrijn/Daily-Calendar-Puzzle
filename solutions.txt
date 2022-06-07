@@ -1,0 +1,13 @@
+This file contains solutions for each single day (just one per day, more likely exist).
+
+The format is: day/month [weekday]
+
+So if you're looking for Thursday 8th of April (as shown in the example imagine on the website), scroll down to:
+Solution for: 8/4 [5]:
+
+TODO
+
+
+All puzzle pieces are numbered 0 to 9. And the edge of the puzzle is marked with an 'X'.
+
+RUNNING....
