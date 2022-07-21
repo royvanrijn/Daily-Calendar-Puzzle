@@ -19,7 +19,7 @@ public class PuzzleADaySolver {
         int[] illegal = new int[]{6, 13, 49, 50, 51, 52};
 
         // Pointers to a date/day:
-        List<Integer> months = Arrays.asList(new Integer[]{ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11});
+        List<Integer> months = Arrays.asList(new Integer[]{ 0, 1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12});
         List<Integer> days = IntStream.range(14, 45).boxed().collect(Collectors.toList());
         List<Integer> weekdays = Arrays.asList(new Integer[]{45, 46, 47, 48, 53, 54, 55});
 
@@ -149,10 +149,9 @@ public class PuzzleADaySolver {
      * A LOT of invalid solutions can be removed if we don't allow small islands with <4 blocks
      * This makes the runtime managable, probably easier and better ways to do this, IDGAF
      */
-    boolean[] filledIn = new boolean[7*8];
     private int getSmallestGroup(final int[] board) {
         // Fill every spot and count group-size:
-        Arrays.fill(filledIn, false);
+        boolean[] filledIn = new boolean[7*8];
 
         int smallestGroup = Integer.MAX_VALUE;
         for(int i = 0; i < board.length; i++) {
